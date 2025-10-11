@@ -29,15 +29,18 @@ fn get_git_status() -> String {
 }
 
 fn get_git_status_file() -> String {
-    let file = fs::read_to_string(".git/HEAD").expect("Could not read .git/HEAD");
+    match fs::read_to_string(".git/HEAD") {
+        Ok(file) => {
+            let branch = file
+                .rsplit('/')
+                .next()
+                .expect("Could not parse file")
+                .trim();
 
-    let branch = file
-        .rsplit('/')
-        .next()
-        .expect("Could not parse file")
-        .trim();
-
-    format!("({})", branch)
+            format!(" ({})", branch)
+        }
+        _ => String::new(),
+    }
 }
 
 fn main() {
@@ -48,5 +51,5 @@ fn main() {
     let cyan_color = "\x1b[36m";
     let reset_color = "\x1b[0m";
 
-    println!("{}{}{} {}", cyan_color, path, reset_color, git_status);
+    println!("{}{}{}{}", cyan_color, path, reset_color, git_status);
 }
