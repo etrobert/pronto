@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, process::Command};
 
 fn get_path() -> String {
     let path = env::current_dir().expect("Could not fetch current directory");
@@ -14,8 +14,19 @@ fn get_path() -> String {
     }
 }
 
+fn get_git_status() -> String {
+    let output = Command::new("git")
+        .args(["status", "--porcelain"])
+        .output()
+        .expect("git status --porcelain failed");
+
+    String::from_utf8_lossy(&output.stdout).trim().to_string()
+}
+
 fn main() {
     let path = get_path();
 
-    println!("{}", path);
+    let git_status = get_git_status();
+
+    println!("{} {}", path, git_status);
 }
