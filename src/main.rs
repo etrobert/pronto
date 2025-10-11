@@ -1,8 +1,4 @@
-use std::{
-    env::{self, args},
-    fs,
-    path::PathBuf,
-};
+use std::{env, fs, path::PathBuf};
 
 const HOME: &str = env!("HOME");
 
@@ -50,7 +46,7 @@ fn get_git_status_file() -> Option<String> {
 }
 
 fn get_exit_code() -> Option<String> {
-    let exit_code = args().nth(1).expect("Previous exit code missing");
+    let exit_code = env::args().nth(1).expect("Previous exit code missing");
 
     match exit_code.as_str() {
         "0" => None,
