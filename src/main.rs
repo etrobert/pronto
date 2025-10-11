@@ -1,6 +1,6 @@
 use std::{
     env::{self, args},
-    fs::{self},
+    fs,
     path::PathBuf,
 };
 
