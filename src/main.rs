@@ -7,16 +7,22 @@ use std::{
 
 const HOME: &str = env!("HOME");
 
+const RED_COLOR: &str = "\x1b[31m";
+const CYAN_COLOR: &str = "\x1b[36m";
+const RESET_COLOR: &str = "\x1b[0m";
+
 fn get_path() -> String {
     let path = env::current_dir().expect("Could not fetch current directory");
 
     let home_path = PathBuf::from(HOME);
 
-    match path.strip_prefix(home_path) {
+    let path = match path.strip_prefix(home_path) {
         Ok(rest) if rest.as_os_str().is_empty() => "~".to_string(),
         Ok(rest) => format!("~/{}", rest.display()),
         _ => path.display().to_string(),
-    }
+    };
+
+    format!("{}{}{}", CYAN_COLOR, path, RESET_COLOR)
 }
 
 fn find_git_root() -> Option<PathBuf> {
@@ -54,10 +60,6 @@ fn get_git_status_file() -> Option<String> {
     format!(" ({})", branch).into()
 }
 
-const RED_COLOR: &str = "\x1b[31m";
-const CYAN_COLOR: &str = "\x1b[36m";
-const RESET_COLOR: &str = "\x1b[0m";
-
 fn get_exit_code() -> Option<String> {
     let exit_code = args().nth(1).expect("Previous exit code missing");
 
@@ -74,8 +76,5 @@ fn main() {
 
     let exit_code = get_exit_code().unwrap_or_default();
 
-    println!(
-        "{}{}{}{}{}",
-        CYAN_COLOR, path, RESET_COLOR, git_status, exit_code
-    );
+    println!("{}{}{}", path, git_status, exit_code);
 }
