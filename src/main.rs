@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf};
+use std::{env, fs, path::PathBuf, process::Command};
 
 const HOME: &str = env!("HOME");
 
@@ -41,12 +41,40 @@ fn get_git_branch(git_root: PathBuf) -> String {
         .to_string()
 }
 
+fn get_git_upstream() -> &'static str {
+    let result = Command::new("git")
+        .args(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"])
+        .output()
+        .expect("Error calling git rev-list");
+
+    if !result.status.success() {
+        return "";
+    }
+
+    let out_str = String::from_utf8_lossy(&result.stdout);
+
+    let parts: Vec<&str> = out_str.split_whitespace().collect();
+
+    let [ahead, behind] = parts.as_slice() else {
+        panic!("git rev-list output does not match expected shape")
+    };
+
+    match (ahead, behind) {
+        (&"0", &"0") => "",
+        (&"0", _) => " ⬇︎",
+        (_, &"0") => " ⬆︎",
+        (_, _) => " ⬆︎⬇︎",
+    }
+}
+
 fn get_git_status() -> Option<String> {
     let git_root = find_git_root()?;
 
     let branch = get_git_branch(git_root);
 
-    format!(" ({})", branch).into()
+    let upstream = get_git_upstream();
+
+    format!(" ({}{})", branch, upstream).into()
 }
 
 fn get_exit_code() -> Option<String> {
