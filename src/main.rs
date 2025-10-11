@@ -1,3 +1,6 @@
+use std::env;
+
 fn main() {
-    println!("Hello, world!");
+    let path = env::current_dir().unwrap();
+    println!("{}", path.display());
 }
