@@ -58,6 +58,25 @@ fn get_exit_code() -> Option<String> {
     }
 }
 
+const MIN: i32 = 60000;
+const HOUR: i32 = 3600000;
+
+fn get_timing() -> Option<String> {
+    let last_cmd_time_str = env::var("LAST_CMD_TIME").ok()?;
+
+    let time: i32 = last_cmd_time_str
+        .parse()
+        .expect("LAST_CMD_TIME is not a valid i32");
+
+    match time {
+        time if time < 100 => Some(format!(" [{:02}ms]", time)),
+        time if time < 1000 => Some(format!(" [.{}s]", time / 10)),
+        time if time < MIN => Some(format!(" [{}.{}s]", time / 1000, time % 1000 / 100)),
+        time if time < HOUR => Some(format!(" [{}m{}s]", time / MIN, time % MIN / 1000)),
+        time => Some(format!(" [{}h{}m]", time / HOUR, time % HOUR / MIN)),
+    }
+}
+
 fn main() {
     let path = get_path();
 
@@ -65,5 +84,7 @@ fn main() {
 
     let exit_code = get_exit_code().unwrap_or_default();
 
-    println!("{}{}{}", path, git_status, exit_code);
+    let timing = get_timing().unwrap_or_default();
+
+    println!("{}{}{}{}$ ", path, git_status, exit_code, timing);
 }
