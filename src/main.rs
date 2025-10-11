@@ -5,12 +5,12 @@ use std::{
     process::Command,
 };
 
+const HOME: &str = env!("HOME");
+
 fn get_path() -> String {
     let path = env::current_dir().expect("Could not fetch current directory");
 
-    let home = env::var_os("HOME").expect("HOME environment variable is not defined");
-
-    let home_path = PathBuf::from(&home);
+    let home_path = PathBuf::from(HOME);
 
     match path.strip_prefix(home_path) {
         Ok(rest) if rest.as_os_str().is_empty() => "~".to_string(),
