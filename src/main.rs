@@ -16,11 +16,11 @@ fn get_path() -> String {
 
 fn get_git_status() -> String {
     let output = Command::new("git")
-        .args(["status", "--porcelain"])
+        .args(["branch", "--show-current"])
         .output()
-        .expect("git status --porcelain failed");
+        .expect("git branch failed");
 
-    String::from_utf8_lossy(&output.stdout).trim().to_string()
+    format!("({})", String::from_utf8_lossy(&output.stdout).trim())
 }
 
 fn main() {
