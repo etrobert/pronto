@@ -2,7 +2,6 @@ use std::{
     env::{self, args},
     fs::{self},
     path::PathBuf,
-    process::Command,
 };
 
 const HOME: &str = env!("HOME");
@@ -34,16 +33,6 @@ fn find_git_root() -> Option<PathBuf> {
         }
         path = path.parent()?.to_path_buf()
     }
-}
-
-#[allow(dead_code, reason = "Keep for reference")]
-fn get_git_status() -> String {
-    let output = Command::new("git")
-        .args(["branch", "--show-current"])
-        .output()
-        .expect("git branch failed");
-
-    format!("({})", String::from_utf8_lossy(&output.stdout).trim())
 }
 
 fn get_git_status_file() -> Option<String> {
