@@ -6,16 +6,36 @@ const RED_COLOR: &str = "\x1b[31m";
 const CYAN_COLOR: &str = "\x1b[36m";
 const RESET_COLOR: &str = "\x1b[0m";
 
-fn get_path() -> String {
-    let path = env::current_dir().expect("Could not fetch current directory");
-
+fn home_substitution(path: PathBuf) -> String {
     let home_path = PathBuf::from(HOME);
 
-    let path = match path.strip_prefix(home_path) {
+    match path.strip_prefix(home_path) {
         Ok(rest) if rest.as_os_str().is_empty() => "~".to_string(),
         Ok(rest) => format!("~/{}", rest.display()),
         _ => path.display().to_string(),
-    };
+    }
+}
+
+fn tmux_substitution(path: &PathBuf) -> Option<String> {
+    let tmux_session_path = PathBuf::from(env::var("TMUX_SESSION_PATH").ok()?);
+
+    let session_name = tmux_session_path
+        .file_name()
+        .expect("Can't extract directory name from TMUX_SESSION_PATH")
+        .to_str()
+        .expect("Directory name in TMUX_SESSION_PATH is invalid");
+
+    match path.strip_prefix(&tmux_session_path) {
+        Ok(rest) if rest.as_os_str().is_empty() => Some(session_name.to_string()),
+        Ok(rest) => Some(format!("{}/{}", session_name, rest.display())),
+        _ => None,
+    }
+}
+
+fn get_path() -> String {
+    let path = env::current_dir().expect("Could not fetch current directory");
+
+    let path = tmux_substitution(&path).unwrap_or(home_substitution(path));
 
     format!("{}{}{}", CYAN_COLOR, path, RESET_COLOR)
 }
