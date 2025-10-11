@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env::{self, args},
     fs::{self},
     path::PathBuf,
     process::Command,
@@ -54,13 +54,28 @@ fn get_git_status_file() -> Option<String> {
     format!(" ({})", branch).into()
 }
 
+const RED_COLOR: &str = "\x1b[31m";
+const CYAN_COLOR: &str = "\x1b[36m";
+const RESET_COLOR: &str = "\x1b[0m";
+
+fn get_exit_code() -> Option<String> {
+    let exit_code = args().nth(1).expect("Previous exit code missing");
+
+    match exit_code.as_str() {
+        "0" => None,
+        _ => Some(format!(" {}[{}]{}", RED_COLOR, exit_code, RESET_COLOR)),
+    }
+}
+
 fn main() {
     let path = get_path();
 
     let git_status = get_git_status_file().unwrap_or_default();
 
-    const CYAN_COLOR: &str = "\x1b[36m";
-    const RESET_COLOR: &str = "\x1b[0m";
+    let exit_code = get_exit_code().unwrap_or_default();
 
-    println!("{}{}{}{}", CYAN_COLOR, path, RESET_COLOR, git_status);
+    println!(
+        "{}{}{}{}{}",
+        CYAN_COLOR, path, RESET_COLOR, git_status, exit_code
+    );
 }
