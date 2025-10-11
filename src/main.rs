@@ -28,5 +28,8 @@ fn main() {
 
     let git_status = get_git_status();
 
-    println!("{} {}", path, git_status);
+    let cyan_color = "\x1b[36m";
+    let reset_color = "\x1b[0m";
+
+    println!("{}{}{} {}", cyan_color, path, reset_color, git_status);
 }
