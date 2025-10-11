@@ -47,6 +47,7 @@ fn get_git_upstream() -> &'static str {
         .output()
         .expect("Error calling git rev-list");
 
+    // Branch probably has no upstream
     if !result.status.success() {
         return "";
     }
