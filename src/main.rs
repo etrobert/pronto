@@ -31,16 +31,20 @@ fn find_git_root() -> Option<PathBuf> {
     }
 }
 
+fn get_git_branch(git_root: PathBuf) -> String {
+    let file = fs::read_to_string(git_root.join(".git/HEAD")).expect("No HEAD file in .git dir");
+
+    file.rsplit('/')
+        .next()
+        .expect("Could not parse file")
+        .trim()
+        .to_string()
+}
+
 fn get_git_status() -> Option<String> {
     let git_root = find_git_root()?;
 
-    let file = fs::read_to_string(git_root.join(".git/HEAD")).expect("No HEAD file in .git dir");
-
-    let branch = file
-        .rsplit('/')
-        .next()
-        .expect("Could not parse file")
-        .trim();
+    let branch = get_git_branch(git_root);
 
     format!(" ({})", branch).into()
 }
