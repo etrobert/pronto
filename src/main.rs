@@ -1,4 +1,9 @@
-use std::{env, path::PathBuf, process::Command};
+use std::{
+    env,
+    fs::{self},
+    path::PathBuf,
+    process::Command,
+};
 
 fn get_path() -> String {
     let path = env::current_dir().expect("Could not fetch current directory");
@@ -23,10 +28,22 @@ fn get_git_status() -> String {
     format!("({})", String::from_utf8_lossy(&output.stdout).trim())
 }
 
+fn get_git_status_file() -> String {
+    let file = fs::read_to_string(".git/HEAD").expect("Could not read .git/HEAD");
+
+    let branch = file
+        .rsplit('/')
+        .next()
+        .expect("Could not parse file")
+        .trim();
+
+    format!("({})", branch)
+}
+
 fn main() {
     let path = get_path();
 
-    let git_status = get_git_status();
+    let git_status = get_git_status_file();
 
     let cyan_color = "\x1b[36m";
     let reset_color = "\x1b[0m";
