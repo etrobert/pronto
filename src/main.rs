@@ -19,6 +19,17 @@ fn get_path() -> String {
     }
 }
 
+fn find_git_root() -> Option<PathBuf> {
+    let mut path = env::current_dir().ok()?;
+
+    loop {
+        if path.join(".git").is_dir() {
+            return Some(path);
+        }
+        path = path.parent()?.to_path_buf()
+    }
+}
+
 #[allow(dead_code, reason = "Keep for reference")]
 fn get_git_status() -> String {
     let output = Command::new("git")
@@ -29,25 +40,24 @@ fn get_git_status() -> String {
     format!("({})", String::from_utf8_lossy(&output.stdout).trim())
 }
 
-fn get_git_status_file() -> String {
-    match fs::read_to_string(".git/HEAD") {
-        Ok(file) => {
-            let branch = file
-                .rsplit('/')
-                .next()
-                .expect("Could not parse file")
-                .trim();
+fn get_git_status_file() -> Option<String> {
+    let git_root = find_git_root()?;
 
-            format!(" ({})", branch)
-        }
-        _ => String::new(),
-    }
+    let file = fs::read_to_string(git_root.join(".git/HEAD")).expect("No HEAD file in .git dir");
+
+    let branch = file
+        .rsplit('/')
+        .next()
+        .expect("Could not parse file")
+        .trim();
+
+    format!(" ({})", branch).into()
 }
 
 fn main() {
     let path = get_path();
 
-    let git_status = get_git_status_file();
+    let git_status = get_git_status_file().unwrap_or(String::new());
 
     let cyan_color = "\x1b[36m";
     let reset_color = "\x1b[0m";
