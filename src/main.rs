@@ -19,6 +19,7 @@ fn get_path() -> String {
     }
 }
 
+#[allow(dead_code, reason = "Keep for reference")]
 fn get_git_status() -> String {
     let output = Command::new("git")
         .args(["branch", "--show-current"])
