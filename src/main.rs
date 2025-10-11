@@ -31,7 +31,7 @@ fn find_git_root() -> Option<PathBuf> {
     }
 }
 
-fn get_git_status_file() -> Option<String> {
+fn get_git_status() -> Option<String> {
     let git_root = find_git_root()?;
 
     let file = fs::read_to_string(git_root.join(".git/HEAD")).expect("No HEAD file in .git dir");
@@ -76,7 +76,7 @@ fn get_timing() -> Option<String> {
 fn main() {
     let path = get_path();
 
-    let git_status = get_git_status_file().unwrap_or_default();
+    let git_status = get_git_status().unwrap_or_default();
 
     let exit_code = get_exit_code().unwrap_or_default();
 
