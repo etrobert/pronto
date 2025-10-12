@@ -34,12 +34,17 @@ fn tmux_substitution(path: &PathBuf) -> Option<String> {
     }
 }
 
+fn get_path_string() -> String {
+    let path = match env::current_dir() {
+        Ok(path) => path,
+        Err(_) => return "???".to_string(),
+    };
+
+    tmux_substitution(&path).unwrap_or(home_substitution(path))
+}
+
 fn get_path() -> String {
-    let path = env::current_dir().expect("Could not fetch current directory");
-
-    let path = tmux_substitution(&path).unwrap_or(home_substitution(path));
-
-    format!("{}{}{}", CYAN_COLOR, path, RESET_COLOR)
+    format!("{}{}{}", CYAN_COLOR, get_path_string(), RESET_COLOR)
 }
 
 fn find_git_root() -> Option<PathBuf> {
