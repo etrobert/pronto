@@ -56,12 +56,10 @@ fn find_git_root() -> Option<PathBuf> {
 
 fn get_git_branch(git_root: PathBuf) -> String {
     match fs::read_to_string(git_root.join(".git/HEAD")) {
-        Ok(file) => file
-            .rsplit('/')
-            .next()
-            .expect("Could not parse file")
-            .trim()
-            .to_string(),
+        Ok(file) => match file.rsplit('/').next() {
+            Some(branch) => branch.trim().to_string(),
+            None => "CORRUPT".to_string(),
+        },
         Err(_) => "CORRUPT".to_string(),
     }
 }
