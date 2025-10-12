@@ -2,9 +2,11 @@ use std::{env, fs, path::PathBuf, process::Command};
 
 const HOME: &str = env!("HOME");
 
-const RED_COLOR: &str = "\x1b[31m";
-const CYAN_COLOR: &str = "\x1b[36m";
-const RESET_COLOR: &str = "\x1b[0m";
+// Colors wrapped with \x01 and \x02 (readline prompt ignore markers) to fix line wrapping
+// See: https://stackoverflow.com/questions/24839271/bash-ps1-line-wrap-issue-with-non-printing-characters-from-an-external-command
+const RED_COLOR: &str = "\x01\x1b[31m\x02";
+const CYAN_COLOR: &str = "\x01\x1b[36m\x02";
+const RESET_COLOR: &str = "\x01\x1b[0m\x02";
 
 fn home_substitution(path: PathBuf) -> String {
     let home_path = PathBuf::from(HOME);
