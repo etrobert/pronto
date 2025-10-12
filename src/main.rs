@@ -55,13 +55,15 @@ fn find_git_root() -> Option<PathBuf> {
 }
 
 fn get_git_branch(git_root: PathBuf) -> String {
-    let file = fs::read_to_string(git_root.join(".git/HEAD")).expect("No HEAD file in .git dir");
-
-    file.rsplit('/')
-        .next()
-        .expect("Could not parse file")
-        .trim()
-        .to_string()
+    match fs::read_to_string(git_root.join(".git/HEAD")) {
+        Ok(file) => file
+            .rsplit('/')
+            .next()
+            .expect("Could not parse file")
+            .trim()
+            .to_string(),
+        Err(_) => "CORRUPT".to_string(),
+    }
 }
 
 fn get_git_upstream() -> &'static str {
