@@ -114,18 +114,25 @@ const MIN: i32 = 60000;
 const HOUR: i32 = 3600000;
 
 fn get_timing() -> Option<String> {
-    let last_cmd_time_str = env::var("LAST_CMD_TIME").ok()?;
+    #[cfg(feature = "timing")]
+    {
+        let last_cmd_time_str = env::var("LAST_CMD_TIME").ok()?;
 
-    let time: i32 = last_cmd_time_str
-        .parse()
-        .expect("LAST_CMD_TIME is not a valid i32");
+        let time: i32 = last_cmd_time_str
+            .parse()
+            .expect("LAST_CMD_TIME is not a valid i32");
 
-    match time {
-        time if time < 100 => Some(format!(" [{:02}ms]", time)),
-        time if time < 1000 => Some(format!(" [.{}s]", time / 10)),
-        time if time < MIN => Some(format!(" [{}.{}s]", time / 1000, time % 1000 / 100)),
-        time if time < HOUR => Some(format!(" [{}m{}s]", time / MIN, time % MIN / 1000)),
-        time => Some(format!(" [{}h{}m]", time / HOUR, time % HOUR / MIN)),
+        match time {
+            time if time < 100 => Some(format!(" [{:02}ms]", time)),
+            time if time < 1000 => Some(format!(" [.{}s]", time / 10)),
+            time if time < MIN => Some(format!(" [{}.{}s]", time / 1000, time % 1000 / 100)),
+            time if time < HOUR => Some(format!(" [{}m{}s]", time / MIN, time % MIN / 1000)),
+            time => Some(format!(" [{}h{}m]", time / HOUR, time % HOUR / MIN)),
+        }
+    }
+    #[cfg(not(feature = "timing"))]
+    {
+        None
     }
 }
 
