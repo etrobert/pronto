@@ -1,7 +1,5 @@
 use std::{env, path::PathBuf, process::Command};
 
-const HOME: &str = env!("HOME");
-
 // Colors wrapped with \x01 and \x02 (readline prompt ignore markers) to fix line wrapping
 // See: https://stackoverflow.com/questions/24839271/bash-ps1-line-wrap-issue-with-non-printing-characters-from-an-external-command
 const RED_COLOR: &str = "\x01\x1b[31m\x02";
@@ -9,7 +7,7 @@ const CYAN_COLOR: &str = "\x01\x1b[36m\x02";
 const RESET_COLOR: &str = "\x01\x1b[0m\x02";
 
 fn home_substitution(path: PathBuf) -> String {
-    let home_path = PathBuf::from(HOME);
+    let home_path = PathBuf::from(env::var("HOME").expect("HOME environment variable not defined"));
 
     match path.strip_prefix(home_path) {
         Ok(rest) if rest.as_os_str().is_empty() => "~".to_string(),
