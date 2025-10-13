@@ -99,7 +99,7 @@ fn get_exit_code() -> Option<String> {
     match exit_code.as_str() {
         "0" => None,
         _ => Some(format!(
-            " {}[{}]{}",
+            " {}{}{}",
             RED_COLOR_ZSH, exit_code, RESET_COLOR_ZSH
         )),
     }
@@ -129,15 +129,23 @@ fn get_left_prompt() -> String {
 
     let git_status = get_git_status().unwrap_or_default();
 
-    let exit_code = get_exit_code().unwrap_or_default();
-
-    format!("{}{}{}$ ", path, git_status, exit_code)
+    format!("{}{}$ ", path, git_status)
 }
 
 fn get_right_prompt() -> String {
-    match get_timing() {
-        Some(timing) => format!("{}{}{}", DIM_COLOR_ZSH, timing, RESET_COLOR_ZSH),
-        None => String::new(),
+    let exit_code = get_exit_code();
+
+    let timing =
+        get_timing().map(|timing| format!("{}{}{}", DIM_COLOR_ZSH, timing, RESET_COLOR_ZSH));
+
+    match (exit_code, timing) {
+        (None, None) => "".to_string(),
+        (None, Some(timing)) => timing,
+        (Some(exit_code), None) => exit_code,
+        (Some(exit_code), Some(timing)) => format!(
+            "{} {}in{} {}",
+            exit_code, DIM_COLOR_ZSH, RESET_COLOR_ZSH, timing
+        ),
     }
 }
 
