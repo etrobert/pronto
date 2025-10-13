@@ -10,6 +10,7 @@ const RESET_COLOR: &str = "\x01\x1b[0m\x02";
 const RED_COLOR_ZSH: &str = "%{\x1b[31m%}";
 const CYAN_COLOR_ZSH: &str = "%{\x1b[36m%}";
 const RESET_COLOR_ZSH: &str = "%{\x1b[0m%}";
+const DIM_COLOR_ZSH: &str = "%{\x1b[2m%}";
 
 fn home_substitution(path: PathBuf) -> String {
     let home_path = PathBuf::from(env::var("HOME").expect("HOME environment variable not defined"));
@@ -134,8 +135,10 @@ fn get_left_prompt() -> String {
 }
 
 fn get_right_prompt() -> String {
-    // For zsh RPROMPT, wrap ANSI codes in %{...%} so zsh doesn't count them in width calculation
-    get_timing().unwrap_or_default()
+    match get_timing() {
+        Some(timing) => format!("{}{}{}", DIM_COLOR_ZSH, timing, RESET_COLOR_ZSH),
+        None => String::new(),
+    }
 }
 
 fn main() {
