@@ -116,8 +116,8 @@ fn get_git_status() -> Option<String> {
         " {}{}{}{}",
         COLORS.green,
         branch.unwrap_or("???"),
+        COLORS.reset,
         ab.unwrap_or_default(),
-        COLORS.reset
     )
     .into()
 }
