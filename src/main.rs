@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf, process::Command};
+use std::{env, path::PathBuf, process::Command};
 
 const HOME: &str = env!("HOME");
 
@@ -43,62 +43,46 @@ fn get_path() -> String {
     format!("{}{}{}", CYAN_COLOR, path, RESET_COLOR)
 }
 
-fn find_git_root() -> Option<PathBuf> {
-    let mut path = env::current_dir().ok()?;
-
-    loop {
-        if path.join(".git").is_dir() {
-            return Some(path);
-        }
-        path = path.parent()?.to_path_buf()
-    }
-}
-
-fn get_git_branch(git_root: PathBuf) -> String {
-    match fs::read_to_string(git_root.join(".git/HEAD")) {
-        Ok(file) => match file.rsplit('/').next() {
-            Some(branch) => branch.trim().to_string(),
-            None => "CORRUPT".to_string(),
-        },
-        Err(_) => "CORRUPT".to_string(),
-    }
-}
-
-fn get_git_upstream() -> &'static str {
+fn get_git_status() -> Option<String> {
     let result = Command::new("git")
-        .args(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"])
+        .args(["status", "--porcelain=v2", "--branch"])
         .output()
-        .expect("Error calling git rev-list");
+        .expect("error calling git status");
 
-    // Branch probably has no upstream
     if !result.status.success() {
-        return "";
+        return None;
     }
 
     let out_str = String::from_utf8_lossy(&result.stdout);
 
-    let parts: Vec<&str> = out_str.split_whitespace().collect();
+    let mut branch: Option<&str> = None;
+    let mut ab: Option<&str> = None;
 
-    let [ahead, behind] = parts.as_slice() else {
-        panic!("git rev-list output does not match expected shape")
-    };
+    for line in out_str.lines() {
+        if let Some(out_branch) = line.strip_prefix("# branch.head ") {
+            branch = Some(out_branch);
+        } else if let Some(out_ab) = line.strip_prefix("# branch.ab ") {
+            let parts: Vec<&str> = out_ab.split_whitespace().collect();
+            match parts.as_slice() {
+                [ahead, behind] => {
+                    let ahead_number = ahead.strip_prefix("+").expect("ahead has wrong formatting");
+                    let behind_number = behind
+                        .strip_prefix("-")
+                        .expect("behind has wrong formatting");
 
-    match (ahead, behind) {
-        (&"0", &"0") => "",
-        (&"0", _) => " ⬇︎",
-        (_, &"0") => " ⬆︎",
-        (_, _) => " ⬆︎⬇︎",
+                    ab = match (ahead_number, behind_number) {
+                        ("0", "0") => Some(""),
+                        ("0", _) => Some(" ⬇︎"),
+                        (_, "0") => Some(" ⬆︎"),
+                        (_, _) => Some(" ⬆︎⬇︎"),
+                    }
+                }
+                _ => {}
+            }
+        }
     }
-}
 
-fn get_git_status() -> Option<String> {
-    let git_root = find_git_root()?;
-
-    let branch = get_git_branch(git_root);
-
-    let upstream = get_git_upstream();
-
-    format!(" ({}{})", branch, upstream).into()
+    format!(" ({}{})", branch.unwrap_or("???"), ab.unwrap_or_default()).into()
 }
 
 fn get_exit_code() -> Option<String> {
