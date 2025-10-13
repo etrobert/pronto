@@ -12,7 +12,9 @@ struct Colors {
 // Zsh: %{...%} (zsh non-printable markers)
 // See: https://stackoverflow.com/questions/24839271/bash-ps1-line-wrap-issue-with-non-printing-characters-from-an-external-command
 static COLORS: LazyLock<Colors> = LazyLock::new(|| {
-    if env::var("ZSH_VERSION").is_ok() {
+    let is_zsh = env::args().any(|arg| arg == "--zsh");
+
+    if is_zsh {
         Colors {
             red: "%{\x1b[31m%}",
             cyan: "%{\x1b[36m%}",
