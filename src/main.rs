@@ -2,6 +2,7 @@ use std::{env, path::PathBuf, process::Command, sync::LazyLock};
 
 struct Colors {
     red: &'static str,
+    green: &'static str,
     cyan: &'static str,
     reset: &'static str,
     dim: &'static str,
@@ -17,6 +18,7 @@ static COLORS: LazyLock<Colors> = LazyLock::new(|| {
     if is_zsh {
         Colors {
             red: "%{\x1b[31m%}",
+            green: "%{\x1b[32m%}",
             cyan: "%{\x1b[36m%}",
             reset: "%{\x1b[0m%}",
             dim: "%{\x1b[2m%}",
@@ -24,6 +26,7 @@ static COLORS: LazyLock<Colors> = LazyLock::new(|| {
     } else {
         Colors {
             red: "\x01\x1b[31m\x02",
+            green: "\x01\x1b[32m\x02",
             cyan: "\x01\x1b[36m\x02",
             reset: "\x01\x1b[0m\x02",
             dim: "\x01\x1b[2m\x02",
@@ -109,7 +112,14 @@ fn get_git_status() -> Option<String> {
         }
     }
 
-    format!(" ({}{})", branch.unwrap_or("???"), ab.unwrap_or_default()).into()
+    format!(
+        " {}{}{}{}",
+        COLORS.green,
+        branch.unwrap_or("???"),
+        ab.unwrap_or_default(),
+        COLORS.reset
+    )
+    .into()
 }
 
 fn get_exit_code() -> Option<String> {
@@ -117,10 +127,7 @@ fn get_exit_code() -> Option<String> {
 
     match exit_code.as_str() {
         "0" => None,
-        _ => Some(format!(
-            " {}{}{}",
-            COLORS.red, exit_code, COLORS.reset
-        )),
+        _ => Some(format!(" {}{}{}", COLORS.red, exit_code, COLORS.reset)),
     }
 }
 
@@ -148,7 +155,7 @@ fn get_left_prompt() -> String {
 
     let git_status = get_git_status().unwrap_or_default();
 
-    format!("{}{}$ ", path, git_status)
+    format!("{}{} » ", path, git_status)
 }
 
 fn get_right_prompt() -> String {
@@ -159,10 +166,9 @@ fn get_right_prompt() -> String {
         (None, None) => "".to_string(),
         (None, Some(timing)) => format!("{}{}{}", COLORS.dim, timing, COLORS.reset),
         (Some(exit_code), None) => exit_code,
-        (Some(exit_code), Some(timing)) => format!(
-            "{} {}in {}{}",
-            exit_code, COLORS.dim, timing, COLORS.reset
-        ),
+        (Some(exit_code), Some(timing)) => {
+            format!("{} {}in {}{}", exit_code, COLORS.dim, timing, COLORS.reset)
+        }
     }
 }
 
