@@ -6,6 +6,11 @@ const RED_COLOR: &str = "\x01\x1b[31m\x02";
 const CYAN_COLOR: &str = "\x01\x1b[36m\x02";
 const RESET_COLOR: &str = "\x01\x1b[0m\x02";
 
+// Colors wrapped with %{...%} for zsh prompts
+const RED_COLOR_ZSH: &str = "%{\x1b[31m%}";
+const CYAN_COLOR_ZSH: &str = "%{\x1b[36m%}";
+const RESET_COLOR_ZSH: &str = "%{\x1b[0m%}";
+
 fn home_substitution(path: PathBuf) -> String {
     let home_path = PathBuf::from(env::var("HOME").expect("HOME environment variable not defined"));
 
@@ -38,7 +43,7 @@ fn get_path() -> String {
         Err(_) => "???".to_string(),
     };
 
-    format!("{}{}{}", CYAN_COLOR, path, RESET_COLOR)
+    format!("{}{}{}", CYAN_COLOR_ZSH, path, RESET_COLOR_ZSH)
 }
 
 fn parse_git_ab(ab: &str) -> &str {
@@ -92,7 +97,10 @@ fn get_exit_code() -> Option<String> {
 
     match exit_code.as_str() {
         "0" => None,
-        _ => Some(format!(" {}[{}]{}", RED_COLOR, exit_code, RESET_COLOR)),
+        _ => Some(format!(
+            " {}[{}]{}",
+            RED_COLOR_ZSH, exit_code, RESET_COLOR_ZSH
+        )),
     }
 }
 
@@ -100,36 +108,44 @@ const MIN: i32 = 60000;
 const HOUR: i32 = 3600000;
 
 fn get_timing() -> Option<String> {
-    #[cfg(feature = "timing")]
-    {
-        let last_cmd_time_str = env::var("LAST_CMD_TIME").ok()?;
+    let last_cmd_time_str = env::var("LAST_CMD_TIME").ok()?;
 
-        let time: i32 = last_cmd_time_str
-            .parse()
-            .expect("LAST_CMD_TIME is not a valid i32");
+    let time: i32 = last_cmd_time_str
+        .parse()
+        .expect("LAST_CMD_TIME is not a valid i32");
 
-        match time {
-            time if time < 100 => Some(format!(" [{:02}ms]", time)),
-            time if time < 1000 => Some(format!(" [.{}s]", time / 10)),
-            time if time < MIN => Some(format!(" [{}.{}s]", time / 1000, time % 1000 / 100)),
-            time if time < HOUR => Some(format!(" [{}m{}s]", time / MIN, time % MIN / 1000)),
-            time => Some(format!(" [{}h{}m]", time / HOUR, time % HOUR / MIN)),
-        }
-    }
-    #[cfg(not(feature = "timing"))]
-    {
-        None
+    match time {
+        time if time < 100 => Some(format!("{:02}ms", time)),
+        time if time < 1000 => Some(format!(".{}s", time / 10)),
+        time if time < MIN => Some(format!("{}.{}s", time / 1000, time % 1000 / 100)),
+        time if time < HOUR => Some(format!("{}m{}s", time / MIN, time % MIN / 1000)),
+        time => Some(format!("{}h{}m", time / HOUR, time % HOUR / MIN)),
     }
 }
 
-fn main() {
+fn get_left_prompt() -> String {
     let path = get_path();
 
     let git_status = get_git_status().unwrap_or_default();
 
     let exit_code = get_exit_code().unwrap_or_default();
 
-    let timing = get_timing().unwrap_or_default();
+    format!("{}{}{}$ ", path, git_status, exit_code)
+}
 
-    println!("{}{}{}{}$ ", path, git_status, exit_code, timing);
+fn get_right_prompt() -> String {
+    // For zsh RPROMPT, wrap ANSI codes in %{...%} so zsh doesn't count them in width calculation
+    get_timing().unwrap_or_default()
+}
+
+fn main() {
+    if env::args()
+        .into_iter()
+        .skip(2)
+        .any(|arg| arg == "--rprompt")
+    {
+        print!("{}", get_right_prompt());
+    } else {
+        print!("{}", get_left_prompt());
+    }
 }
