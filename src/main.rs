@@ -66,7 +66,7 @@ fn get_path() -> String {
         Err(_) => "???".to_string(),
     };
 
-    format!("{}{}{}", COLORS.cyan, path, COLORS.reset)
+    format!("{}", path)
 }
 
 fn parse_git_ab(ab: &str) -> &str {
@@ -165,7 +165,10 @@ fn get_left_prompt() -> String {
 
     let git_status = get_git_status().unwrap_or_default();
 
-    format!("{}{} {}»{} ", path, git_status, chevron_color, COLORS.reset)
+    format!(
+        "{}{}{} {}»{} ",
+        COLORS.cyan, path, git_status, chevron_color, COLORS.reset
+    )
 }
 
 fn get_right_prompt() -> String {
