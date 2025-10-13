@@ -43,6 +43,26 @@ fn get_path() -> String {
     format!("{}{}{}", CYAN_COLOR, path, RESET_COLOR)
 }
 
+fn parse_git_ab(ab: &str) -> &str {
+    let parts: Vec<&str> = ab.split_whitespace().collect();
+    match parts.as_slice() {
+        [ahead, behind] => {
+            let ahead_number = ahead.strip_prefix("+").expect("ahead has wrong formatting");
+            let behind_number = behind
+                .strip_prefix("-")
+                .expect("behind has wrong formatting");
+
+            match (ahead_number, behind_number) {
+                ("0", "0") => "",
+                ("0", _) => " ⬇︎",
+                (_, "0") => " ⬆︎",
+                (_, _) => " ⬆︎⬇︎",
+            }
+        }
+        _ => panic!("Unexpected ab format: {}", ab),
+    }
+}
+
 fn get_git_status() -> Option<String> {
     let result = Command::new("git")
         .args(["status", "--porcelain=v2", "--branch"])
@@ -62,23 +82,7 @@ fn get_git_status() -> Option<String> {
         if let Some(out_branch) = line.strip_prefix("# branch.head ") {
             branch = Some(out_branch);
         } else if let Some(out_ab) = line.strip_prefix("# branch.ab ") {
-            let parts: Vec<&str> = out_ab.split_whitespace().collect();
-            match parts.as_slice() {
-                [ahead, behind] => {
-                    let ahead_number = ahead.strip_prefix("+").expect("ahead has wrong formatting");
-                    let behind_number = behind
-                        .strip_prefix("-")
-                        .expect("behind has wrong formatting");
-
-                    ab = match (ahead_number, behind_number) {
-                        ("0", "0") => Some(""),
-                        ("0", _) => Some(" ⬇︎"),
-                        (_, "0") => Some(" ⬆︎"),
-                        (_, _) => Some(" ⬆︎⬇︎"),
-                    }
-                }
-                _ => {}
-            }
+            ab = Some(parse_git_ab(out_ab));
         }
     }
 
