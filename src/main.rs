@@ -1,16 +1,33 @@
-use std::{env, path::PathBuf, process::Command};
+use std::{env, path::PathBuf, process::Command, sync::LazyLock};
 
-// Colors wrapped with \x01 and \x02 (readline prompt ignore markers) to fix line wrapping
+struct Colors {
+    red: &'static str,
+    cyan: &'static str,
+    reset: &'static str,
+    dim: &'static str,
+}
+
+// Detect shell and use appropriate color wrappers
+// Bash: \x01...\x02 (readline prompt ignore markers)
+// Zsh: %{...%} (zsh non-printable markers)
 // See: https://stackoverflow.com/questions/24839271/bash-ps1-line-wrap-issue-with-non-printing-characters-from-an-external-command
-const RED_COLOR: &str = "\x01\x1b[31m\x02";
-const CYAN_COLOR: &str = "\x01\x1b[36m\x02";
-const RESET_COLOR: &str = "\x01\x1b[0m\x02";
-
-// Colors wrapped with %{...%} for zsh prompts
-const RED_COLOR_ZSH: &str = "%{\x1b[31m%}";
-const CYAN_COLOR_ZSH: &str = "%{\x1b[36m%}";
-const RESET_COLOR_ZSH: &str = "%{\x1b[0m%}";
-const DIM_COLOR_ZSH: &str = "%{\x1b[2m%}";
+static COLORS: LazyLock<Colors> = LazyLock::new(|| {
+    if env::var("ZSH_VERSION").is_ok() {
+        Colors {
+            red: "%{\x1b[31m%}",
+            cyan: "%{\x1b[36m%}",
+            reset: "%{\x1b[0m%}",
+            dim: "%{\x1b[2m%}",
+        }
+    } else {
+        Colors {
+            red: "\x01\x1b[31m\x02",
+            cyan: "\x01\x1b[36m\x02",
+            reset: "\x01\x1b[0m\x02",
+            dim: "\x01\x1b[2m\x02",
+        }
+    }
+});
 
 fn home_substitution(path: PathBuf) -> String {
     let home_path = PathBuf::from(env::var("HOME").expect("HOME environment variable not defined"));
@@ -44,7 +61,7 @@ fn get_path() -> String {
         Err(_) => "???".to_string(),
     };
 
-    format!("{}{}{}", CYAN_COLOR_ZSH, path, RESET_COLOR_ZSH)
+    format!("{}{}{}", COLORS.cyan, path, COLORS.reset)
 }
 
 fn parse_git_ab(ab: &str) -> &str {
@@ -100,7 +117,7 @@ fn get_exit_code() -> Option<String> {
         "0" => None,
         _ => Some(format!(
             " {}{}{}",
-            RED_COLOR_ZSH, exit_code, RESET_COLOR_ZSH
+            COLORS.red, exit_code, COLORS.reset
         )),
     }
 }
@@ -134,17 +151,15 @@ fn get_left_prompt() -> String {
 
 fn get_right_prompt() -> String {
     let exit_code = get_exit_code();
-
-    let timing =
-        get_timing().map(|timing| format!("{}{}{}", DIM_COLOR_ZSH, timing, RESET_COLOR_ZSH));
+    let timing = get_timing();
 
     match (exit_code, timing) {
         (None, None) => "".to_string(),
-        (None, Some(timing)) => timing,
+        (None, Some(timing)) => format!("{}{}{}", COLORS.dim, timing, COLORS.reset),
         (Some(exit_code), None) => exit_code,
         (Some(exit_code), Some(timing)) => format!(
-            "{} {}in{} {}",
-            exit_code, DIM_COLOR_ZSH, RESET_COLOR_ZSH, timing
+            "{} {}in {}{}",
+            exit_code, COLORS.dim, timing, COLORS.reset
         ),
     }
 }
