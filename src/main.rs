@@ -150,12 +150,22 @@ fn get_timing() -> Option<String> {
     }
 }
 
+fn color(s: String, color: &str) -> String {
+    format!("{}{}{}", color, s, COLORS.reset)
+}
+
 fn get_left_prompt() -> String {
+    let exit_code = env::args().nth(1).expect("Previous exit code missing");
+    let chevron_color = if exit_code == "0" {
+        COLORS.reset
+    } else {
+        COLORS.red
+    };
     let path = get_path();
 
     let git_status = get_git_status().unwrap_or_default();
 
-    format!("{}{} » ", path, git_status)
+    format!("{}{} {}»{} ", path, git_status, chevron_color, COLORS.reset)
 }
 
 fn get_right_prompt() -> String {
@@ -164,7 +174,7 @@ fn get_right_prompt() -> String {
 
     match (exit_code, timing) {
         (None, None) => "".to_string(),
-        (None, Some(timing)) => format!("{}{}{}", COLORS.dim, timing, COLORS.reset),
+        (None, Some(timing)) => color(timing, COLORS.dim),
         (Some(exit_code), None) => exit_code,
         (Some(exit_code), Some(timing)) => {
             format!("{} {}in {}{}", exit_code, COLORS.dim, timing, COLORS.reset)
