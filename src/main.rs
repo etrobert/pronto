@@ -103,7 +103,7 @@ fn get_git_status() -> Option<String> {
 
     let mut branch: Option<&str> = None;
     let mut ab: Option<&str> = None;
-    let mut is_dirty = false;
+    let mut dirty_marker = "";
 
     for line in out_str.lines() {
         if let Some(out_branch) = line.strip_prefix("# branch.head ") {
@@ -115,11 +115,9 @@ fn get_git_status() -> Option<String> {
                 || line.starts_with('u')  // unmerged entries (conflicts)
                 || line.starts_with('?')  // untracked entries
         {
-            is_dirty = true;
+            dirty_marker = "*";
         }
     }
-
-    let dirty_marker = if is_dirty { "*" } else { "" };
 
     format!(
         " {}{}{}{}{}",
