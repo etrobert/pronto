@@ -80,9 +80,9 @@ fn parse_git_ab(ab: &str) -> &str {
 
             match (ahead_number, behind_number) {
                 ("0", "0") => "",
-                ("0", _) => " ⬇︎",
-                (_, "0") => " ⬆︎",
-                (_, _) => " ⬆︎⬇︎",
+                ("0", _) => " ↓",
+                (_, "0") => " ↑",
+                (_, _) => " ↑↓",
             }
         }
         _ => panic!("Unexpected ab format: {}", ab),
