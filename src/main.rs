@@ -110,10 +110,11 @@ fn get_git_status() -> Option<String> {
             branch = Some(out_branch);
         } else if let Some(out_ab) = line.strip_prefix("# branch.ab ") {
             ab = Some(parse_git_ab(out_ab));
-        } else if line.starts_with('1')  // ordinary changed entries
-                || line.starts_with('2')  // renamed or copied entries
-                || line.starts_with('u')  // unmerged entries (conflicts)
-                || line.starts_with('?')  // untracked entries
+        } else if line.starts_with('1') // ordinary changed entries
+                || line.starts_with('2') // renamed or copied entries
+                || line.starts_with('u') // unmerged entries (conflicts)
+                // untracked entries
+                || line.starts_with('?')
         {
             dirty_marker = "*";
         }
