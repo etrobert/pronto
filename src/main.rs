@@ -103,21 +103,31 @@ fn get_git_status() -> Option<String> {
 
     let mut branch: Option<&str> = None;
     let mut ab: Option<&str> = None;
+    let mut is_dirty = false;
 
     for line in out_str.lines() {
         if let Some(out_branch) = line.strip_prefix("# branch.head ") {
             branch = Some(out_branch);
         } else if let Some(out_ab) = line.strip_prefix("# branch.ab ") {
             ab = Some(parse_git_ab(out_ab));
+        } else if line.starts_with('1')  // ordinary changed entries
+                || line.starts_with('2')  // renamed or copied entries
+                || line.starts_with('u')  // unmerged entries (conflicts)
+                || line.starts_with('?')  // untracked entries
+        {
+            is_dirty = true;
         }
     }
 
+    let dirty_marker = if is_dirty { "*" } else { "" };
+
     format!(
-        " {}{}{}{}",
+        " {}{}{}{}{}",
         COLORS.green,
         branch.unwrap_or("???"),
         COLORS.reset,
         ab.unwrap_or_default(),
+        dirty_marker
     )
     .into()
 }
