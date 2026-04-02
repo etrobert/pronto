@@ -70,15 +70,15 @@ fn get_path() -> String {
 }
 
 fn get_hostname() -> String {
-    let result = Command::new("hostname")
+    match Command::new("hostname")
         .output()
-        .expect("error calling hostname");
-
-    return if result.status.success() {
-        String::from_utf8_lossy(&result.stdout).trim().to_string()
-    } else {
-        "???".to_string()
-    };
+        .expect("error calling hostname")
+    {
+        result if result.status.success() => {
+            String::from_utf8_lossy(&result.stdout).trim().to_string()
+        }
+        _ => "???".to_string(),
+    }
 }
 
 fn parse_git_ab(ab: &str) -> &str {
