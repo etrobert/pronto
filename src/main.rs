@@ -71,7 +71,7 @@ fn get_path() -> String {
 
 fn get_hostname() -> String {
     match Command::new("hostname")
-        .arg("--short")
+        .arg("-s")
         .output()
         .expect("error calling hostname")
     {
