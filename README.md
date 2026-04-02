@@ -14,5 +14,5 @@ INformation I'm potentially interested in
 | ✅     | previous command exit code      |
 
 ```
-pronto/src on  main$ git status                                       127 in 5s
+hostname pronto/src on  main$ git status                     127 in 5s
 ```

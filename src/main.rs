@@ -69,6 +69,18 @@ fn get_path() -> String {
     format!("{}", path)
 }
 
+fn get_hostname() -> String {
+    let result = Command::new("hostname")
+        .output()
+        .expect("error calling hostname");
+
+    return if result.status.success() {
+        String::from_utf8_lossy(&result.stdout).trim().to_string()
+    } else {
+        "???".to_string()
+    };
+}
+
 fn parse_git_ab(ab: &str) -> &str {
     let parts: Vec<&str> = ab.split_whitespace().collect();
     match parts.as_slice() {
@@ -170,13 +182,14 @@ fn get_left_prompt() -> String {
     } else {
         COLORS.red
     };
+    let hostname = get_hostname();
     let path = get_path();
 
     let git_status = get_git_status().unwrap_or_default();
 
     format!(
-        "{}{}{} {}»{} ",
-        COLORS.cyan, path, git_status, chevron_color, COLORS.reset
+        "{}{} {}{}{} {}»{} ",
+        COLORS.dim, hostname, COLORS.cyan, path, git_status, chevron_color, COLORS.reset
     )
 }
 
