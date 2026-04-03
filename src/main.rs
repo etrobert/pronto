@@ -189,8 +189,16 @@ fn get_left_prompt() -> String {
     let git_status = get_git_status().unwrap_or_default();
 
     format!(
-        "{}{} {}{}{} {}»{} ",
-        COLORS.dim, hostname, COLORS.cyan, path, git_status, chevron_color, COLORS.reset
+        "{}{}{} {}{}{} {}»{} ",
+        COLORS.dim,
+        hostname,
+        // reset seems necessary on darwin, otherwise everything is dim moving forward
+        COLORS.reset,
+        COLORS.cyan,
+        path,
+        git_status,
+        chevron_color,
+        COLORS.reset
     )
 }
 
