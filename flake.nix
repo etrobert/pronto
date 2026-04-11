@@ -37,6 +37,7 @@
               description = "Rust-based shell prompt/status tool";
               license = licenses.mit;
               platforms = platforms.unix;
+              mainProgram = "pronto";
             };
           };
         }
