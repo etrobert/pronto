@@ -50,11 +50,8 @@
         in
         {
           default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              cargo
-              rustc
-              rust-analyzer
-            ];
+            inputsFrom = [ self.packages.${system}.default ];
+            buildInputs = with pkgs; [ rust-analyzer ];
           };
         }
       );
