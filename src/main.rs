@@ -1,4 +1,5 @@
 use std::{env, path::PathBuf, process::Command, sync::LazyLock};
+use gethostname::gethostname;
 
 struct Colors {
     red: &'static str,
@@ -70,7 +71,7 @@ fn get_path() -> String {
 }
 
 fn get_hostname() -> String {
-    env::var("HOST").unwrap_or_else(|_| "???".to_string())
+    gethostname().to_string_lossy().into_owned()
 }
 
 fn parse_git_ab(ab: &str) -> &str {
