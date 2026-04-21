@@ -75,7 +75,7 @@ fn get_hostname() -> String {
     hostname.split('.').next().unwrap_or(&hostname).to_owned()
 }
 
-fn parse_git_ab(ab: &str) -> &str {
+fn parse_git_ab(ab: &str) -> String {
     let parts: Vec<&str> = ab.split_whitespace().collect();
     match parts.as_slice() {
         [ahead, behind] => {
@@ -84,12 +84,17 @@ fn parse_git_ab(ab: &str) -> &str {
                 .strip_prefix("-")
                 .expect("behind has wrong formatting");
 
-            match (ahead_number, behind_number) {
-                ("0", "0") => "",
-                ("0", _) => " ↓",
-                (_, "0") => " ↑",
-                (_, _) => " ↑↓",
-            }
+            let ahead_str = match ahead_number {
+                "0" => String::new(),
+                "1" => " ↑".to_string(),
+                n => format!(" ↑{}", n),
+            };
+            let behind_str = match behind_number {
+                "0" => String::new(),
+                "1" => " ↓".to_string(),
+                n => format!(" ↓{}", n),
+            };
+            format!("{}{}", ahead_str, behind_str)
         }
         _ => panic!("Unexpected ab format: {}", ab),
     }
@@ -108,7 +113,7 @@ fn get_git_status() -> Option<String> {
     let out_str = String::from_utf8_lossy(&result.stdout);
 
     let mut branch: Option<&str> = None;
-    let mut ab: Option<&str> = None;
+    let mut ab: Option<String> = None;
     let mut dirty_marker = "";
 
     for line in out_str.lines() {
