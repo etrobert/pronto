@@ -23,42 +23,44 @@ const TTL: Duration = Duration::from_secs(30);
 /// `isDraft` because a draft PR still reports `state: OPEN`.
 const FIELDS: &str = "number,state,statusCheckRollup,isDraft";
 
-// GitHub's own icons, so a row reads like the PR page. All four are octicons
-// present in Nerd Fonts' f400-f533 block.
-const OPEN: &str = "\u{f407}";
-const DRAFT: &str = "\u{f4dd}";
-const MERGED: &str = "\u{f419}";
-const CLOSED: &str = "\u{f4dc}";
+pub enum State {
+    Open,
+    Draft,
+    Merged,
+    Closed,
+}
 
-const PASS: &str = "✓";
-const FAIL: &str = "✗";
-const RUNNING: &str = "·";
-
-pub enum Health {
-    Pass,
+pub enum Checks {
+    None,
+    Ok,
     Fail,
-    Running,
+    Pending,
 }
 
 pub struct Summary {
     pub number: u64,
-    pub state: &'static str,
-    pub mark: Option<(&'static str, Health)>,
+    pub state: State,
+    pub checks: Checks,
 }
 
 impl Summary {
-    /// `#847 ` — the part no surface colours differently.
-    pub fn head(&self) -> String {
-        format!("#{} {}", self.number, self.state)
-    }
-
-    /// `#847  ✓` — uncoloured, because the prompt needs zsh's `%{…%}` wrappers
-    /// and fzf needs raw ANSI.
-    pub fn plain(&self) -> String {
-        match &self.mark {
-            Some((mark, _)) => format!("{} {}", self.head(), mark),
-            None => self.head(),
-        }
+    /// `847\tOPEN\tok` — fields rather than a rendering, so each caller keeps
+    /// its own. A prompt and a list row want different glyphs and different
+    /// colour escapes, but there is only one right answer about the PR itself.
+    pub fn fields(&self) -> String {
+        let state = match self.state {
+            State::Open => "OPEN",
+            State::Draft => "DRAFT",
+            State::Merged => "MERGED",
+            State::Closed => "CLOSED",
+        };
+        let checks = match self.checks {
+            Checks::None => "none",
+            Checks::Ok => "ok",
+            Checks::Fail => "fail",
+            Checks::Pending => "pending",
+        };
+        format!("{}\t{}\t{}", self.number, state, checks)
     }
 }
 
@@ -233,9 +235,9 @@ pub fn refresh(dir: &Path) {
 /// A check is only judged by its conclusion once it has finished: a running
 /// CheckRun has no conclusion, and reading that as "not a failure" is how a
 /// half-finished CI run comes out looking green.
-fn health(checks: &[&serde_json::Value]) -> Option<(&'static str, Health)> {
+fn health(checks: &[&serde_json::Value]) -> Checks {
     if checks.is_empty() {
-        return None;
+        return Checks::None;
     }
 
     let running = |check: &serde_json::Value| match check["status"].as_str() {
@@ -258,11 +260,11 @@ fn health(checks: &[&serde_json::Value]) -> Option<(&'static str, Health)> {
     };
 
     if checks.iter().any(|c| failed(c)) {
-        Some((FAIL, Health::Fail))
+        Checks::Fail
     } else if checks.iter().any(|c| running(c)) {
-        Some((RUNNING, Health::Running))
+        Checks::Pending
     } else {
-        Some((PASS, Health::Pass))
+        Checks::Ok
     }
 }
 
@@ -283,12 +285,12 @@ pub fn summary(dir: &Path) -> Option<Summary> {
     Some(Summary {
         number: pr["number"].as_u64()?,
         state: match (pr["state"].as_str()?, pr["isDraft"].as_bool()) {
-            ("MERGED", _) => MERGED,
-            ("CLOSED", _) => CLOSED,
-            (_, Some(true)) => DRAFT,
-            _ => OPEN,
+            ("MERGED", _) => State::Merged,
+            ("CLOSED", _) => State::Closed,
+            (_, Some(true)) => State::Draft,
+            _ => State::Open,
         },
-        mark: health(&checks),
+        checks: health(&checks),
     })
 }
 
