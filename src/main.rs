@@ -1,5 +1,12 @@
+mod pr;
+
 use gethostname::gethostname;
-use std::{env, path::PathBuf, process::Command, sync::LazyLock};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    process::Command,
+    sync::LazyLock,
+};
 
 struct Colors {
     red: &'static str,
@@ -200,26 +207,61 @@ fn get_left_prompt() -> String {
     )
 }
 
+/// Only the check mark is coloured: it is the part you glance for, and the state
+/// icons already differ by shape.
+fn get_pr() -> Option<String> {
+    let summary = pr::field(&env::current_dir().ok()?)?;
+    let head = color(summary.head(), COLORS.dim);
+
+    Some(match summary.mark {
+        None => head,
+        Some((mark, health)) => {
+            let hue = match health {
+                pr::Health::Pass => COLORS.green,
+                pr::Health::Fail => COLORS.red,
+                pr::Health::Running => COLORS.dim,
+            };
+            format!("{} {}", head, color(mark.to_string(), hue))
+        }
+    })
+}
+
 fn get_right_prompt() -> String {
     let exit_code = get_exit_code();
     let timing = get_timing();
 
-    match (exit_code, timing) {
+    let status = match (exit_code, timing) {
         (None, None) => "".to_string(),
-        (None, Some(timing)) => color(timing, COLORS.dim),
+        (None, Some(timing)) => format!(" {}", color(timing, COLORS.dim)),
         (Some(exit_code), None) => exit_code,
         (Some(exit_code), Some(timing)) => {
             format!("{} {}in {}{}", exit_code, COLORS.dim, timing, COLORS.reset)
         }
+    };
+
+    match get_pr() {
+        Some(pr) => format!("{}{}", pr, status),
+        None => status,
     }
 }
 
 fn main() {
-    if env::args()
-        .into_iter()
-        .skip(2)
-        .any(|arg| arg == "--rprompt")
-    {
+    let args: Vec<String> = env::args().collect();
+
+    // The PR subcommands take a directory where the prompt takes an exit code:
+    // the session switcher calls them for sessions it is not sitting in.
+    match (args.get(1).map(String::as_str), args.get(2)) {
+        (Some("--pr-refresh"), Some(dir)) => return pr::refresh(Path::new(dir)),
+        (Some("--pr-summary"), Some(dir)) => {
+            if let Some(summary) = pr::summary(Path::new(dir)) {
+                print!("{}", summary.plain());
+            }
+            return;
+        }
+        _ => {}
+    }
+
+    if args.iter().skip(2).any(|arg| arg == "--rprompt") {
         print!("{}", get_right_prompt());
     } else {
         print!("{}", get_left_prompt());
