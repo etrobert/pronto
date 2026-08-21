@@ -209,21 +209,34 @@ fn get_left_prompt() -> String {
 
 /// Only the check mark is coloured: it is the part you glance for, and the state
 /// icons already differ by shape.
+// GitHub's own icons, written as escapes so the private-use codepoints survive
+// any editor. A wrong glyph still renders, so it would fail silently.
+const PR_OPEN: &str = "\u{f407}"; // oct-git_pull_request
+const PR_DRAFT: &str = "\u{f4dd}"; // oct-git_pull_request_draft
+const PR_MERGED: &str = "\u{f419}"; // oct-git_merge
+const PR_CLOSED: &str = "\u{f4dc}"; // oct-git_pull_request_closed
+
+/// Only the check mark is coloured: it is the part you glance for, and the
+/// state icons already differ by shape.
 fn get_pr() -> Option<String> {
     let summary = pr::field(&env::current_dir().ok()?)?;
-    let head = color(summary.head(), COLORS.dim);
 
-    Some(match summary.mark {
-        None => head,
-        Some((mark, health)) => {
-            let hue = match health {
-                pr::Health::Pass => COLORS.green,
-                pr::Health::Fail => COLORS.red,
-                pr::Health::Running => COLORS.dim,
-            };
-            format!("{} {}", head, color(mark.to_string(), hue))
-        }
-    })
+    let state = match summary.state {
+        pr::State::Open => PR_OPEN,
+        pr::State::Draft => PR_DRAFT,
+        pr::State::Merged => PR_MERGED,
+        pr::State::Closed => PR_CLOSED,
+    };
+    let head = color(format!("#{} {}", summary.number, state), COLORS.dim);
+
+    let mark = match summary.checks {
+        pr::Checks::None => return Some(head),
+        pr::Checks::Ok => color("\u{2713}".to_string(), COLORS.green),
+        pr::Checks::Fail => color("\u{2717}".to_string(), COLORS.red),
+        pr::Checks::Pending => color("\u{00b7}".to_string(), COLORS.dim),
+    };
+
+    Some(format!("{} {}", head, mark))
 }
 
 fn get_right_prompt() -> String {
@@ -254,7 +267,7 @@ fn main() {
         (Some("--pr-refresh"), Some(dir)) => return pr::refresh(Path::new(dir)),
         (Some("--pr-summary"), Some(dir)) => {
             if let Some(summary) = pr::summary(Path::new(dir)) {
-                print!("{}", summary.plain());
+                print!("{}", summary.fields());
             }
             return;
         }
