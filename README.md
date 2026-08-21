@@ -11,7 +11,8 @@ INformation I'm potentially interested in
 |        | project language with cute icon |                   | right    |
 |        | project language runtime ver    |  v1.86.0           | right    |
 | ✅     | duration of previous command    | 5s                  | right    |
-| ✅     | previous command exit code      |
+| ✅     | previous command exit code      |                     | right    |
+| ✅     | pull request state and CI       | #847  ✓            | right    |
 
 ```
 hostname pronto/src on  main$ git status                     127 in 5s
