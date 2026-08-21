@@ -14,6 +14,9 @@ struct Colors {
     cyan: &'static str,
     reset: &'static str,
     dim: &'static str,
+    /// Catppuccin Macchiato mauve, #c6a0f6. Truecolor because GitHub renders a
+    /// merged PR purple and no ANSI slot holds one -- magenta is pink here.
+    mauve: &'static str,
 }
 
 // Detect shell and use appropriate color wrappers
@@ -30,6 +33,7 @@ static COLORS: LazyLock<Colors> = LazyLock::new(|| {
             cyan: "%{\x1b[36m%}",
             reset: "%{\x1b[0m%}",
             dim: "%{\x1b[2m%}",
+            mauve: "%{\x1b[38;2;198;160;246m%}",
         }
     } else {
         Colors {
@@ -38,6 +42,7 @@ static COLORS: LazyLock<Colors> = LazyLock::new(|| {
             cyan: "\x01\x1b[36m\x02",
             reset: "\x01\x1b[0m\x02",
             dim: "\x01\x1b[2m\x02",
+            mauve: "\x01\x1b[38;2;198;160;246m\x02",
         }
     }
 });
@@ -216,18 +221,24 @@ const PR_DRAFT: &str = "\u{f4dd}"; // oct-git_pull_request_draft
 const PR_MERGED: &str = "\u{f419}"; // oct-git_merge
 const PR_CLOSED: &str = "\u{f4dc}"; // oct-git_pull_request_closed
 
-/// Only the check mark is coloured: it is the part you glance for, and the
-/// state icons already differ by shape.
+/// Colours follow GitHub's own: open green, merged purple, closed red, draft
+/// grey. Shape alone is not enough -- four glyphs in one dim grey read as one
+/// undifferentiated blob at prompt size.
 fn get_pr() -> Option<String> {
     let summary = pr::field(&env::current_dir().ok()?)?;
 
-    let state = match summary.state {
-        pr::State::Open => PR_OPEN,
-        pr::State::Draft => PR_DRAFT,
-        pr::State::Merged => PR_MERGED,
-        pr::State::Closed => PR_CLOSED,
+    let (state, hue) = match summary.state {
+        pr::State::Open => (PR_OPEN, COLORS.green),
+        pr::State::Draft => (PR_DRAFT, COLORS.dim),
+        pr::State::Merged => (PR_MERGED, COLORS.mauve),
+        pr::State::Closed => (PR_CLOSED, COLORS.red),
     };
-    let head = color(format!("#{} {}", summary.number, state), COLORS.dim);
+    // The number stays dim: it is a label, the glyph is the signal.
+    let head = format!(
+        "{} {}",
+        color(format!("#{}", summary.number), COLORS.dim),
+        color(state.to_string(), hue),
+    );
 
     let mark = match summary.checks {
         pr::Checks::None => return Some(head),
