@@ -112,8 +112,16 @@ fn parse_git_ab(ab: &str) -> String {
     }
 }
 
-fn get_git_status() -> Option<String> {
-    let result = Command::new("git")
+/// Returns the branch and everything the prompt shows after it. `dir` is None
+/// for the prompt, which runs where the shell already is, and Some for the
+/// session switcher, which asks about worktrees it is not sitting in.
+fn get_git_status(dir: Option<&Path>) -> Option<(String, String)> {
+    let mut command = Command::new("git");
+    if let Some(dir) = dir {
+        command.arg("-C").arg(dir);
+    }
+
+    let result = command
         .args(["status", "--porcelain=v2", "--branch"])
         .output()
         .expect("error calling git status");
@@ -143,15 +151,10 @@ fn get_git_status() -> Option<String> {
         }
     }
 
-    format!(
-        " {}{}{}{}{}",
-        COLORS.green,
-        branch.unwrap_or("???"),
-        COLORS.reset,
-        ab.unwrap_or_default(),
-        dirty_marker
-    )
-    .into()
+    Some((
+        branch.unwrap_or("???").to_string(),
+        format!("{}{}", ab.unwrap_or_default(), dirty_marker),
+    ))
 }
 
 fn get_exit_code() -> Option<String> {
@@ -196,7 +199,10 @@ fn get_left_prompt() -> String {
     let hostname = get_hostname();
     let path = get_path();
 
-    let git_status = get_git_status().unwrap_or_default();
+    let git_status = match get_git_status(None) {
+        Some((branch, state)) => format!(" {}{}{}{}", COLORS.green, branch, COLORS.reset, state),
+        None => String::new(),
+    };
 
     format!(
         "{}{}{} {}{}{} {}»{} ",
@@ -276,6 +282,18 @@ fn main() {
     // the session switcher calls them for sessions it is not sitting in.
     match (args.get(1).map(String::as_str), args.get(2)) {
         (Some("--pr-refresh"), Some(dir)) => return pr::refresh(Path::new(dir)),
+        (Some("--git-summary"), Some(dir)) => {
+            let dir = Path::new(dir);
+            // A directory that is not a repository is a normal answer -- the
+            // switcher asks about every session. One that is not there at all
+            // is the caller being wrong, and silence would read as "clean".
+            assert!(dir.is_dir(), "not a directory: {}", dir.display());
+
+            if let Some((_, state)) = get_git_status(Some(dir)) {
+                print!("{}", state.trim_start());
+            }
+            return;
+        }
         (Some("--pr-summary"), Some(dir)) => {
             if let Some(summary) = pr::summary(Path::new(dir)) {
                 print!("{}", summary.fields());
