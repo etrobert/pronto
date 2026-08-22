@@ -283,7 +283,13 @@ fn main() {
     match (args.get(1).map(String::as_str), args.get(2)) {
         (Some("--pr-refresh"), Some(dir)) => return pr::refresh(Path::new(dir)),
         (Some("--git-summary"), Some(dir)) => {
-            if let Some((_, state)) = get_git_status(Some(Path::new(dir))) {
+            let dir = Path::new(dir);
+            // A directory that is not a repository is a normal answer -- the
+            // switcher asks about every session. One that is not there at all
+            // is the caller being wrong, and silence would read as "clean".
+            assert!(dir.is_dir(), "not a directory: {}", dir.display());
+
+            if let Some((_, state)) = get_git_status(Some(dir)) {
                 print!("{}", state.trim_start());
             }
             return;
