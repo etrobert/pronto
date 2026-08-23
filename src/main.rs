@@ -60,9 +60,20 @@ fn home_substitution(path: PathBuf) -> String {
 fn tmux_substitution(path: &PathBuf) -> Option<String> {
     let tmux_session_path = PathBuf::from(env::var("TMUX_SESSION_PATH").ok()?);
 
+    // The name tmux-sessionizer gave the session: the path tail under ~/work,
+    // <repo>/<branch>. A session elsewhere -- doc -- keeps its directory name.
+    let work = PathBuf::from(env::var("HOME").expect("HOME environment variable not defined"))
+        .join("work");
+
     let session_name = tmux_session_path
-        .file_name()
-        .expect("Can't extract directory name from TMUX_SESSION_PATH")
+        .strip_prefix(work)
+        .unwrap_or_else(|_| {
+            Path::new(
+                tmux_session_path
+                    .file_name()
+                    .expect("Can't extract directory name from TMUX_SESSION_PATH"),
+            )
+        })
         .to_str()
         .expect("Directory name in TMUX_SESSION_PATH is invalid");
 
