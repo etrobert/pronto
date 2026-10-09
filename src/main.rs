@@ -24,26 +24,21 @@ struct Colors {
 // Zsh: %{...%} (zsh non-printable markers)
 // See: https://stackoverflow.com/questions/24839271/bash-ps1-line-wrap-issue-with-non-printing-characters-from-an-external-command
 static COLORS: LazyLock<Colors> = LazyLock::new(|| {
-    let is_zsh = env::args().any(|arg| arg == "--zsh");
-
-    if is_zsh {
-        Colors {
-            red: "%{\x1b[31m%}",
-            green: "%{\x1b[32m%}",
-            cyan: "%{\x1b[36m%}",
-            reset: "%{\x1b[0m%}",
-            dim: "%{\x1b[2m%}",
-            mauve: "%{\x1b[38;2;198;160;246m%}",
-        }
+    let (open, close) = if env::args().any(|arg| arg == "--zsh") {
+        ("%{", "%}")
     } else {
-        Colors {
-            red: "\x01\x1b[31m\x02",
-            green: "\x01\x1b[32m\x02",
-            cyan: "\x01\x1b[36m\x02",
-            reset: "\x01\x1b[0m\x02",
-            dim: "\x01\x1b[2m\x02",
-            mauve: "\x01\x1b[38;2;198;160;246m\x02",
-        }
+        ("\x01", "\x02")
+    };
+    // String::leak: built once per process, and the fields stay &'static str.
+    let wrap = |code: &str| -> &'static str { format!("{open}{code}{close}").leak() };
+
+    Colors {
+        red: wrap("\x1b[31m"),
+        green: wrap("\x1b[32m"),
+        cyan: wrap("\x1b[36m"),
+        reset: wrap("\x1b[0m"),
+        dim: wrap("\x1b[2m"),
+        mauve: wrap("\x1b[38;2;198;160;246m"),
     }
 });
 
