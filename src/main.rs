@@ -181,11 +181,10 @@ const MIN: i32 = 60000;
 const HOUR: i32 = 3600000;
 
 fn get_timing() -> Option<String> {
-    let last_cmd_time_str = env::var("LAST_CMD_TIME").ok()?;
-
-    let time: i32 = last_cmd_time_str
+    let time: i32 = env::args()
+        .find_map(|arg| arg.strip_prefix("--cmd-duration=").map(str::to_owned))?
         .parse()
-        .expect("LAST_CMD_TIME is not a valid i32");
+        .expect("--cmd-duration is not a valid i32");
 
     match time {
         time if time < 100 => Some(format!("{:02}ms", time)),
