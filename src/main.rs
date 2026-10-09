@@ -28,9 +28,10 @@ struct Colors {
 // See: https://stackoverflow.com/questions/24839271/bash-ps1-line-wrap-issue-with-non-printing-characters-from-an-external-command
 static COLORS: LazyLock<Colors> = LazyLock::new(|| {
     let is_nu = env::args().any(|arg| arg == "--nu");
+    let is_zsh = env::args().any(|arg| arg == "--zsh");
     let (open, close) = if is_nu {
         ("", "")
-    } else if env::args().any(|arg| arg == "--zsh") {
+    } else if is_zsh {
         ("%{", "%}")
     } else {
         ("\x01", "\x02")
