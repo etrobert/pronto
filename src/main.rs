@@ -17,14 +17,20 @@ struct Colors {
     /// Catppuccin Macchiato mauve, #c6a0f6. Truecolor because GitHub renders a
     /// merged PR purple and no ANSI slot holds one -- magenta is pink here.
     mauve: &'static str,
+    /// Opens each prompt: nushell paints the prompt in its own colour first.
+    start: &'static str,
 }
 
 // Detect shell and use appropriate color wrappers
 // Bash: \x01...\x02 (readline prompt ignore markers)
 // Zsh: %{...%} (zsh non-printable markers)
+// Nushell: none, reedline measures the prompt without escapes
 // See: https://stackoverflow.com/questions/24839271/bash-ps1-line-wrap-issue-with-non-printing-characters-from-an-external-command
 static COLORS: LazyLock<Colors> = LazyLock::new(|| {
-    let (open, close) = if env::args().any(|arg| arg == "--zsh") {
+    let is_nu = env::args().any(|arg| arg == "--nu");
+    let (open, close) = if is_nu {
+        ("", "")
+    } else if env::args().any(|arg| arg == "--zsh") {
         ("%{", "%}")
     } else {
         ("\x01", "\x02")
@@ -39,6 +45,7 @@ static COLORS: LazyLock<Colors> = LazyLock::new(|| {
         reset: wrap("\x1b[0m"),
         dim: wrap("\x1b[2m"),
         mauve: wrap("\x1b[38;2;198;160;246m"),
+        start: if is_nu { "\x1b[0m" } else { "" },
     }
 });
 
@@ -210,7 +217,8 @@ fn get_left_prompt() -> String {
     };
 
     format!(
-        "{}{}{} {}{}{} {}»{} ",
+        "{}{}{}{} {}{}{} {}»{} ",
+        COLORS.start,
         COLORS.dim,
         hostname,
         // reset seems necessary on darwin, otherwise everything is dim moving forward
@@ -275,8 +283,8 @@ fn get_right_prompt() -> String {
     };
 
     match get_pr() {
-        Some(pr) => format!("{}{}", pr, status),
-        None => status,
+        Some(pr) => format!("{}{}{}", COLORS.start, pr, status),
+        None => format!("{}{}", COLORS.start, status),
     }
 }
 
